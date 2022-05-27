@@ -2,19 +2,9 @@ package me.amryousef.webrtc_demo
 
 import android.app.Application
 import android.content.Context
-import org.webrtc.Camera2Enumerator
-import org.webrtc.DefaultVideoDecoderFactory
-import org.webrtc.DefaultVideoEncoderFactory
-import org.webrtc.EglBase
-import org.webrtc.IceCandidate
-import org.webrtc.MediaConstraints
-import org.webrtc.PeerConnection
-import org.webrtc.PeerConnectionFactory
-import org.webrtc.SdpObserver
-import org.webrtc.SessionDescription
-import org.webrtc.SurfaceTextureHelper
-import org.webrtc.SurfaceViewRenderer
-import org.webrtc.VideoCapturer
+import org.webrtc.*
+import org.webrtc.PeerConnection.RTCConfiguration
+
 
 class RTCClient(
     context: Application,
@@ -63,10 +53,20 @@ class RTCClient(
             .createPeerConnectionFactory()
     }
 
-    private fun buildPeerConnection(observer: PeerConnection.Observer) = peerConnectionFactory.createPeerConnection(
-        iceServer,
-        observer
-    )
+    private fun buildPeerConnection(observer: PeerConnection.Observer): PeerConnection? {
+        val rtcConfiguration = RTCConfiguration(iceServer)
+//        rtcConfiguration.iceTransportsType = PeerConnection.IceTransportsType.ALL
+//        rtcConfiguration.iceCandidatePoolSize = 2
+//        rtcConfiguration.bundlePolicy = PeerConnection.BundlePolicy.MAXCOMPAT
+        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+//        rtcConfiguration.continualGatheringPolicy =
+//            PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+//        rtcConfiguration.candidateNetworkPolicy = PeerConnection.CandidateNetworkPolicy.ALL
+      return  peerConnectionFactory.createPeerConnection(
+            rtcConfiguration,
+            observer
+        )
+    }
 
     private fun getVideoCapturer(context: Context) =
         Camera2Enumerator(context).run {
@@ -92,6 +92,17 @@ class RTCClient(
         val localStream = peerConnectionFactory.createLocalMediaStream(LOCAL_STREAM_ID)
         localStream.addTrack(localVideoTrack)
         peerConnection?.addStream(localStream)
+    }
+
+    fun addTransceiver() {
+        peerConnection?.addTransceiver(
+            MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,
+            RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
+        )
+        peerConnection?.addTransceiver(
+            MediaStreamTrack.MediaType.MEDIA_TYPE_VIDEO,
+            RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
+        )
     }
 
     private fun PeerConnection.call(sdpObserver: SdpObserver) {

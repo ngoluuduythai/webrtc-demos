@@ -15,9 +15,7 @@ import androidx.core.view.isGone
 import io.ktor.util.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.webrtc.IceCandidate
-import org.webrtc.MediaStream
-import org.webrtc.SessionDescription
+import org.webrtc.*
 import java.io.*
 
 
@@ -94,7 +92,9 @@ class MainActivity : AppCompatActivity() {
 
         rtcClient.initSurfaceView(remote_view)
         rtcClient.initSurfaceView(local_view)
-        rtcClient.startLocalVideoCapture(local_view)
+        //rtcClient.startLocalVideoCapture(local_view)
+        rtcClient.addTransceiver()
+
         signallingClient = SignallingClient(createSignallingClientListener())
         signallingClient.send("HELLO " +1122)
 
