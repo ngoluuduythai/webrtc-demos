@@ -5,7 +5,7 @@ import org.webrtc.SessionDescription
 
 interface SignallingClientListener {
     fun onConnectionEstablished()
-    fun onOfferReceived(description: SessionDescription)
-    fun onAnswerReceived(description: SessionDescription)
-    fun onIceCandidateReceived(iceCandidate: IceCandidate)
+    fun onOfferReceived(description: SDPMessage)
+    fun onAnswerReceived(description: SDPMessage)
+    fun onIceCandidateReceived(iceCandidate: IceMessage)
 }

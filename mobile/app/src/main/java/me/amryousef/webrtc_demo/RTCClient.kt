@@ -18,7 +18,8 @@ import org.webrtc.VideoCapturer
 
 class RTCClient(
     context: Application,
-    observer: PeerConnection.Observer
+    observer: PeerConnection
+    .Observer
 ) {
 
     companion object {
@@ -56,7 +57,7 @@ class RTCClient(
             .setVideoDecoderFactory(DefaultVideoDecoderFactory(rootEglBase.eglBaseContext))
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(rootEglBase.eglBaseContext, true, true))
             .setOptions(PeerConnectionFactory.Options().apply {
-                disableEncryption = true
+                //disableEncryption = true
                 disableNetworkMonitor = true
             })
             .createPeerConnectionFactory()
@@ -109,6 +110,7 @@ class RTCClient(
                     }
 
                     override fun onCreateSuccess(p0: SessionDescription?) {
+                        println("SessionDescription ${p0?.description.toString()}")
                     }
 
                     override fun onCreateFailure(p0: String?) {

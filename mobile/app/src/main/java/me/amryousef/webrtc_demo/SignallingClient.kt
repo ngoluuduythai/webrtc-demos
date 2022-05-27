@@ -7,10 +7,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.features.json.GsonSerializer
 import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.websocket.WebSockets
-import io.ktor.client.features.websocket.ws
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.readText
+import io.ktor.client.features.websocket.*
+import io.ktor.http.cio.websocket.*
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +18,7 @@ import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 
@@ -30,7 +29,8 @@ class SignallingClient(
 ) : CoroutineScope {
 
     companion object {
-        private const val HOST_ADDRESS = "192.168.0.12"
+        private const val HOST_ADDRESS = "webrtc.nirbheek.in"
+        private const val HOST_ADDRESS_LOCAL = "192.168.1.18"
     }
 
     private val job = Job()
@@ -53,7 +53,8 @@ class SignallingClient(
     }
 
     private fun connect() = launch {
-        client.ws(host = HOST_ADDRESS, port = 8080, path = "/connect") {
+
+        client.wss(host = HOST_ADDRESS, port = 8443) {
             listener.onConnectionEstablished()
             val sendData = sendChannel.openSubscription()
             try {
@@ -64,17 +65,33 @@ class SignallingClient(
                         outgoing.send(Frame.Text(it))
                     }
                     incoming.poll()?.let { frame ->
+                        Log.v(this@SignallingClient.javaClass.simpleName, "Received: frame $frame")
+
                         if (frame is Frame.Text) {
                             val data = frame.readText()
+
                             Log.v(this@SignallingClient.javaClass.simpleName, "Received: $data")
-                            val jsonObject = gson.fromJson(data, JsonObject::class.java)
-                            withContext(Dispatchers.Main) {
-                                if (jsonObject.has("serverUrl")) {
-                                    listener.onIceCandidateReceived(gson.fromJson(jsonObject, IceCandidate::class.java))
-                                } else if (jsonObject.has("type") && jsonObject.get("type").asString == "OFFER") {
-                                    listener.onOfferReceived(gson.fromJson(jsonObject, SessionDescription::class.java))
-                                } else if (jsonObject.has("type") && jsonObject.get("type").asString == "ANSWER") {
-                                    listener.onAnswerReceived(gson.fromJson(jsonObject, SessionDescription::class.java))
+                            if(data == "HELLO" || data == "OFFER_REQUEST" || data == "SESSION_OK") {
+                                Log.v(this@SignallingClient.javaClass.simpleName, "Registered with server")
+                            } else {
+                                val jsonObject = gson.fromJson(data, JsonObject::class.java)
+                                Log.v(this@SignallingClient.javaClass.simpleName, "Received: jsonObject $jsonObject")
+
+                                withContext(Dispatchers.Main) {
+                                    if (jsonObject.has("ice")) {
+                                        listener.onIceCandidateReceived(gson.fromJson(jsonObject, IceMessage::class.java))
+                                    } else if (jsonObject.has("sdp")){
+                                        val sdpData = gson.fromJson(jsonObject, SDPMessage::class.java)
+                                        when(sdpData.sdp.type) {
+                                            "offer" -> listener.onOfferReceived(sdpData)
+                                            "answer" -> listener.onAnswerReceived(sdpData)
+                                            else -> {
+                                                Log.v(this@SignallingClient.javaClass.simpleName, "Unknown SDP Received: jsonObject $jsonObject")
+                                            }
+                                        }
+                                    } else {
+                                        Log.v(this@SignallingClient.javaClass.simpleName, "Unknown Received: jsonObject $jsonObject")
+                                    }
                                 }
                             }
                         }
@@ -87,11 +104,45 @@ class SignallingClient(
     }
 
     fun send(dataObject: Any?) = runBlocking {
-        sendChannel.send(gson.toJson(dataObject))
+        val data = gson.toJson(dataObject)
+        println("send data $data")
+        sendChannel.send(data)
+    }
+
+    fun send(textData: String) = runBlocking {
+        sendChannel.send(textData)
     }
 
     fun destroy() {
-        client.close()
-        job.complete()
+        //client.close()
+        //job.complete()
     }
 }
+
+
+@Serializable
+data class SDPMessage(
+    val sdp: SDPData
+)
+
+@Serializable
+data class SDPData(
+    val type: String,
+    val sdp: String)
+
+@Serializable
+data class IceMessage(
+    val ice: IceData
+)
+
+@Serializable
+data class IceData(
+    val candidate: String,
+    val sdpMid: String,
+    val sdpMLineIndex: Int
+ )
+
+
+
+//{"sdp":{"type":"offer","sdp":"v=0\r\no=-"}}
+// {"ice":{"candidate":"candidate:918459","sdpMid":"2","sdpMLineIndex":2}}

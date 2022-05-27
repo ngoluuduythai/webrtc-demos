@@ -1,23 +1,25 @@
 package me.amryousef.webrtc_demo
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.AssetManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
-import io.ktor.util.KtorExperimentalAPI
-import kotlinx.android.synthetic.main.activity_main.call_button
-import kotlinx.android.synthetic.main.activity_main.local_view
-import kotlinx.android.synthetic.main.activity_main.remote_view
-import kotlinx.android.synthetic.main.activity_main.remote_view_loading
+import io.ktor.util.*
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.webrtc.IceCandidate
 import org.webrtc.MediaStream
 import org.webrtc.SessionDescription
+import java.io.*
+
 
 @ExperimentalCoroutinesApi
 @KtorExperimentalAPI
@@ -34,7 +36,18 @@ class MainActivity : AppCompatActivity() {
     private val sdpObserver = object : AppSdpObserver() {
         override fun onCreateSuccess(p0: SessionDescription?) {
             super.onCreateSuccess(p0)
-            signallingClient.send(p0)
+            println("sdp onCreateSuccess ${p0?.description.toString()}")
+
+            val sdpData = if(p0?.type == SessionDescription.Type.OFFER) {
+                Log.v(this@MainActivity.javaClass.simpleName, "Send offer ${p0?.description}")
+
+                SDPMessage(SDPData(type = "offer", sdp = p0.description!!))
+            } else {
+                Log.v(this@MainActivity.javaClass.simpleName, "Send anwser ${p0?.description}")
+                SDPMessage(SDPData(type = "answer", sdp = p0?.description!!))
+            }
+
+            signallingClient.send(sdpData)
         }
     }
 
@@ -58,8 +71,18 @@ class MainActivity : AppCompatActivity() {
             object : PeerConnectionObserver() {
                 override fun onIceCandidate(p0: IceCandidate?) {
                     super.onIceCandidate(p0)
-                    signallingClient.send(p0)
+                    println("onIceCandidate  ${p0?.sdp}")
+                    Log.v(this@MainActivity.javaClass.simpleName, "Send onIceCandidate ${p0?.sdp}")
+
+                    val iceData = IceMessage(IceData(
+                        candidate = p0?.sdp!!,
+                        sdpMid = p0?.sdpMid,
+                        sdpMLineIndex = p0?.sdpMLineIndex )
+                    )
+
+                    signallingClient.send(iceData)
                     rtcClient.addIceCandidate(p0)
+
                 }
 
                 override fun onAddStream(p0: MediaStream?) {
@@ -68,11 +91,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
+
         rtcClient.initSurfaceView(remote_view)
         rtcClient.initSurfaceView(local_view)
         rtcClient.startLocalVideoCapture(local_view)
         signallingClient = SignallingClient(createSignallingClientListener())
-        call_button.setOnClickListener { rtcClient.call(sdpObserver) }
+        signallingClient.send("HELLO " +1122)
+
+        call_button.setOnClickListener {
+            signallingClient.send("SESSION " +1212)
+            rtcClient.call(sdpObserver)
+        }
     }
 
     private fun createSignallingClientListener() = object : SignallingClientListener {
@@ -80,18 +109,32 @@ class MainActivity : AppCompatActivity() {
             call_button.isClickable = true
         }
 
-        override fun onOfferReceived(description: SessionDescription) {
+        override fun onOfferReceived(sdpData: SDPMessage) {
+            Log.v(this@MainActivity.javaClass.simpleName, "Received onOfferReceived ${sdpData.sdp.sdp}")
+
+            val description = SessionDescription(SessionDescription.Type.OFFER, sdpData.sdp.sdp)
             rtcClient.onRemoteSessionReceived(description)
             rtcClient.answer(sdpObserver)
             remote_view_loading.isGone = true
         }
 
-        override fun onAnswerReceived(description: SessionDescription) {
+        override fun onAnswerReceived(sdpData: SDPMessage) {
+            Log.v(this@MainActivity.javaClass.simpleName, "Received onAnswerReceived ${sdpData.sdp.sdp}")
+
+            val description = SessionDescription(SessionDescription.Type.ANSWER, sdpData.sdp.sdp)
             rtcClient.onRemoteSessionReceived(description)
             remote_view_loading.isGone = true
         }
 
-        override fun onIceCandidateReceived(iceCandidate: IceCandidate) {
+        override fun onIceCandidateReceived(iceMessage: IceMessage) {
+            Log.v(this@MainActivity.javaClass.simpleName, "Received onIceCandidateReceived ${iceMessage.ice.candidate}")
+
+            val iceCandidate =
+                IceCandidate(
+                iceMessage.ice.sdpMid,
+                iceMessage.ice.sdpMLineIndex,
+                iceMessage.ice.candidate
+                )
             rtcClient.addIceCandidate(iceCandidate)
         }
     }
