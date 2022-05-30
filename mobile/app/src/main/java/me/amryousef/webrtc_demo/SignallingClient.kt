@@ -114,8 +114,8 @@ class SignallingClient(
     }
 
     fun destroy() {
-        //client.close()
-        //job.complete()
+        client.close()
+        job.complete()
     }
 }
 

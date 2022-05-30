@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         rtcClient.initSurfaceView(remote_view)
-        rtcClient.initSurfaceView(local_view)
+        //rtcClient.initSurfaceView(local_view)
         //rtcClient.startLocalVideoCapture(local_view)
         rtcClient.addTransceiver()
 
@@ -129,9 +129,15 @@ class MainActivity : AppCompatActivity() {
         override fun onIceCandidateReceived(iceMessage: IceMessage) {
             Log.v(this@MainActivity.javaClass.simpleName, "Received onIceCandidateReceived ${iceMessage.ice.candidate}")
 
+            var sdpMid = iceMessage.ice.sdpMid
+
+            println("sdpMid  $sdpMid")
+            if(sdpMid == "null" || sdpMid == "" || sdpMid == null){
+                sdpMid = "0"
+            }
+
             val iceCandidate =
-                IceCandidate(
-                iceMessage.ice.sdpMid,
+                IceCandidate(sdpMid,
                 iceMessage.ice.sdpMLineIndex,
                 iceMessage.ice.candidate
                 )

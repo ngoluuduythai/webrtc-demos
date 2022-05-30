@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import org.webrtc.*
 import org.webrtc.PeerConnection.RTCConfiguration
+import java.util.*
 
 
 class RTCClient(
@@ -45,7 +46,7 @@ class RTCClient(
         return PeerConnectionFactory
             .builder()
             .setVideoDecoderFactory(DefaultVideoDecoderFactory(rootEglBase.eglBaseContext))
-            .setVideoEncoderFactory(DefaultVideoEncoderFactory(rootEglBase.eglBaseContext, true, true))
+            .setVideoEncoderFactory(DefaultVideoEncoderFactory(rootEglBase.eglBaseContext, false, true))
             .setOptions(PeerConnectionFactory.Options().apply {
                 //disableEncryption = true
                 disableNetworkMonitor = true
@@ -95,10 +96,10 @@ class RTCClient(
     }
 
     fun addTransceiver() {
-        peerConnection?.addTransceiver(
-            MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,
-            RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
-        )
+//        peerConnection?.addTransceiver(
+//            MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,
+//            RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
+//        )
         peerConnection?.addTransceiver(
             MediaStreamTrack.MediaType.MEDIA_TYPE_VIDEO,
             RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
