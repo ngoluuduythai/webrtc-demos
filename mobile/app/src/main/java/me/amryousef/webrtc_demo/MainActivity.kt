@@ -3,20 +3,26 @@ package me.amryousef.webrtc_demo
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.content.res.AssetManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.GridView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
+import androidx.recyclerview.widget.RecyclerView
 import io.ktor.util.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.webrtc.*
 import java.io.*
+import org.webrtc.EglBase
+import androidx.recyclerview.widget.GridLayoutManager
+
+
+
 
 
 @ExperimentalCoroutinesApi
@@ -29,7 +35,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var rtcClient: RTCClient
-    private lateinit var signallingClient: SignallingClient
+    lateinit var signallingClient: SignallingClient
+    private val rootEglBase: EglBase = EglBase.create()
 
     private val sdpObserver = object : AppSdpObserver() {
         override fun onCreateSuccess(p0: SessionDescription?) {
@@ -63,50 +70,79 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+   // lateinit var webrtcGRV: PeerAdapter
+    lateinit var courseList: List<TrackPeerMap>
+
     private fun onCameraPermissionGranted() {
-        rtcClient = RTCClient(
-            application,
-            object : PeerConnectionObserver() {
-                override fun onIceCandidate(p0: IceCandidate?) {
-                    super.onIceCandidate(p0)
-                    println("onIceCandidate  ${p0?.sdp}")
-                    Log.v(this@MainActivity.javaClass.simpleName, "Send onIceCandidate ${p0?.sdp}")
+//        rtcClient = RTCClient(
+//            application,
+//            object : PeerConnectionObserver() {
+//                override fun onIceCandidate(p0: IceCandidate?) {
+//                    super.onIceCandidate(p0)
+//                    println("onIceCandidate  ${p0?.sdp}")
+//                    Log.v(this@MainActivity.javaClass.simpleName, "Send onIceCandidate ${p0?.sdp}")
+//
+//                    val iceData = IceMessage(IceData(
+//                        candidate = p0?.sdp!!,
+//                        sdpMid = p0?.sdpMid,
+//                        sdpMLineIndex = p0?.sdpMLineIndex )
+//                    )
+//
+//                    signallingClient.send(iceData)
+//                    rtcClient.addIceCandidate(p0)
+//
+//                }
+//
+//                override fun onAddStream(p0: MediaStream?) {
+//                    super.onAddStream(p0)
+//                    p0?.videoTracks?.get(0)?.addSink(remote_view)
+//                }
+//            }
+//        )
+//
+//        rtcClient.initSurfaceView(remote_view)
+//        //rtcClient.initSurfaceView(local_view)
+//        //rtcClient.startLocalVideoCapture(local_view)
+//        rtcClient.addTransceiver()
 
-                    val iceData = IceMessage(IceData(
-                        candidate = p0?.sdp!!,
-                        sdpMid = p0?.sdpMid,
-                        sdpMLineIndex = p0?.sdpMLineIndex )
-                    )
+        //signallingClient = SignallingClient(createSignallingClientListener())
+        //signallingClient.send("HELLO " +1122)
 
-                    signallingClient.send(iceData)
-                    rtcClient.addIceCandidate(p0)
+//        call_button.setOnClickListener {
+//            signallingClient.send("SESSION " +1212)
+//            rtcClient.call(sdpObserver)
+//        }
 
-                }
 
-                override fun onAddStream(p0: MediaStream?) {
-                    super.onAddStream(p0)
-                    p0?.videoTracks?.get(0)?.addSink(remote_view)
-                }
-            }
+        //webrtcGRV = findViewById(R.id.simpleGridView)
+
+
+
+        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase),
+            TrackPeerMap(2, rootEglBase), TrackPeerMap(3, rootEglBase)
+        ,TrackPeerMap(4, rootEglBase), TrackPeerMap(5, rootEglBase), TrackPeerMap(6, rootEglBase)
         )
 
-        rtcClient.initSurfaceView(remote_view)
-        //rtcClient.initSurfaceView(local_view)
-        //rtcClient.startLocalVideoCapture(local_view)
-        rtcClient.addTransceiver()
+        val peerAdapter = PeerAdapter(courseList = peerList,
+            context =  this@MainActivity as Context,
+            application = application
+            )
 
-        signallingClient = SignallingClient(createSignallingClientListener())
-        signallingClient.send("HELLO " +1122)
+        peerAdapter.submitList(peerList)
 
-        call_button.setOnClickListener {
-            signallingClient.send("SESSION " +1212)
-            rtcClient.call(sdpObserver)
+        val view: RecyclerView = findViewById(R.id.recyclerView)
+
+        view.apply {
+            layoutManager = GridLayoutManager(this@MainActivity, 2)
+            adapter = peerAdapter
         }
     }
 
+
+
     private fun createSignallingClientListener() = object : SignallingClientListener {
         override fun onConnectionEstablished() {
-            call_button.isClickable = true
+            //call_button.isClickable = true
         }
 
         override fun onOfferReceived(sdpData: SDPMessage) {
@@ -115,7 +151,7 @@ class MainActivity : AppCompatActivity() {
             val description = SessionDescription(SessionDescription.Type.OFFER, sdpData.sdp.sdp)
             rtcClient.onRemoteSessionReceived(description)
             rtcClient.answer(sdpObserver)
-            remote_view_loading.isGone = true
+            //remote_view_loading.isGone = true
         }
 
         override fun onAnswerReceived(sdpData: SDPMessage) {
@@ -123,7 +159,7 @@ class MainActivity : AppCompatActivity() {
 
             val description = SessionDescription(SessionDescription.Type.ANSWER, sdpData.sdp.sdp)
             rtcClient.onRemoteSessionReceived(description)
-            remote_view_loading.isGone = true
+            //remote_view_loading.isGone = true
         }
 
         override fun onIceCandidateReceived(iceMessage: IceMessage) {

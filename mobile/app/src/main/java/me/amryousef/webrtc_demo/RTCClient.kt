@@ -9,8 +9,8 @@ import java.util.*
 
 class RTCClient(
     context: Application,
-    observer: PeerConnection
-    .Observer
+    observer: PeerConnection.Observer,
+    private val rootEglBase: EglBase
 ) {
 
     companion object {
@@ -18,7 +18,6 @@ class RTCClient(
         private const val LOCAL_STREAM_ID = "local_track"
     }
 
-    private val rootEglBase: EglBase = EglBase.create()
 
     init {
         initPeerConnectionFactory(context)
@@ -59,7 +58,7 @@ class RTCClient(
 //        rtcConfiguration.iceTransportsType = PeerConnection.IceTransportsType.ALL
 //        rtcConfiguration.iceCandidatePoolSize = 2
 //        rtcConfiguration.bundlePolicy = PeerConnection.BundlePolicy.MAXCOMPAT
-        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+//        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
 //        rtcConfiguration.continualGatheringPolicy =
 //            PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
 //        rtcConfiguration.candidateNetworkPolicy = PeerConnection.CandidateNetworkPolicy.ALL
@@ -81,6 +80,10 @@ class RTCClient(
     fun initSurfaceView(view: SurfaceViewRenderer) = view.run {
         setMirror(true)
         setEnableHardwareScaler(true)
+        init(rootEglBase.eglBaseContext, null)
+    }
+
+    fun customInitSurfaceView(view: SurfaceViewRenderer) = view.run {
         init(rootEglBase.eglBaseContext, null)
     }
 

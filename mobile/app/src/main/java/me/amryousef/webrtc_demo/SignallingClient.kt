@@ -30,7 +30,7 @@ class SignallingClient(
 
     companion object {
         private const val HOST_ADDRESS = "webrtc.nirbheek.in"
-        private const val HOST_ADDRESS_LOCAL = "192.168.1.18"
+        //private const val HOST_ADDRESS = "192.168.1.8"
     }
 
     private val job = Job()
@@ -71,8 +71,8 @@ class SignallingClient(
                             val data = frame.readText()
 
                             Log.v(this@SignallingClient.javaClass.simpleName, "Received: $data")
-                            if(data == "HELLO" || data == "OFFER_REQUEST" || data == "SESSION_OK") {
-                                Log.v(this@SignallingClient.javaClass.simpleName, "Registered with server")
+                            if(data == "HELLO" || data == "OFFER_REQUEST" || data == "SESSION_OK" || data.contains("ERROR peer")) {
+                                Log.v(this@SignallingClient.javaClass.simpleName, "Registered with serve $data")
                             } else {
                                 val jsonObject = gson.fromJson(data, JsonObject::class.java)
                                 Log.v(this@SignallingClient.javaClass.simpleName, "Received: jsonObject $jsonObject")
