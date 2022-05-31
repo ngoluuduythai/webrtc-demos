@@ -58,7 +58,7 @@ class RTCClient(
 //        rtcConfiguration.iceTransportsType = PeerConnection.IceTransportsType.ALL
 //        rtcConfiguration.iceCandidatePoolSize = 2
 //        rtcConfiguration.bundlePolicy = PeerConnection.BundlePolicy.MAXCOMPAT
-//        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
 //        rtcConfiguration.continualGatheringPolicy =
 //            PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
 //        rtcConfiguration.candidateNetworkPolicy = PeerConnection.CandidateNetworkPolicy.ALL

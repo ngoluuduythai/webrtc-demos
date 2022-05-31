@@ -58,11 +58,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         application: Application
     ) {
 
-            val webrtcView = itemView.findViewById<SurfaceViewRenderer>(R.id.remote_view).apply {
-                setEnableHardwareScaler(true)
-                setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
-                sinkAdded = false
-            }
+            val webrtcView = itemView.findViewById<SurfaceViewRenderer>(R.id.remote_view)
             this.signallingClient = SignallingClient(createSignallingClientListener())
 
 
@@ -120,8 +116,9 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
 //        }
 
         //rtcClient.customInitSurfaceView(webrtcView)
+        rtcClient.initSurfaceView(webrtcView)
 
-        //rtcClient.addTransceiver()
+        rtcClient.addTransceiver()
         val newPeerId = trackPeerMap.peerID + 10
 
         signallingClient.send("HELLO " + newPeerId)
@@ -130,7 +127,6 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         Thread.sleep(5000)
         signallingClient.send("SESSION " +trackPeerMap.peerID)
         rtcClient.call(sdpObserver)
-        rtcClient.initSurfaceView(webrtcView)
 
     }
 

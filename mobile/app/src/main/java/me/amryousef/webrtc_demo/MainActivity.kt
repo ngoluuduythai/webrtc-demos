@@ -118,9 +118,12 @@ class MainActivity : AppCompatActivity() {
 
 
 
-        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase),
-            TrackPeerMap(2, rootEglBase), TrackPeerMap(3, rootEglBase)
-        ,TrackPeerMap(4, rootEglBase), TrackPeerMap(5, rootEglBase), TrackPeerMap(6, rootEglBase)
+//        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase),
+//            TrackPeerMap(2, rootEglBase), TrackPeerMap(7, rootEglBase)
+//        ,TrackPeerMap(4, rootEglBase), TrackPeerMap(5, rootEglBase), TrackPeerMap(6, rootEglBase)
+//        )
+
+        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase)
         )
 
         val peerAdapter = PeerAdapter(courseList = peerList,
