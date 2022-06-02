@@ -2,6 +2,7 @@ package me.amryousef.webrtc_demo
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import org.webrtc.*
 import org.webrtc.PeerConnection.RTCConfiguration
 import java.util.*
@@ -24,7 +25,15 @@ class RTCClient(
     }
 
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302")
+        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
+        //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:3478").createIceServer(),
+        //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:5349").createIceServer()
+
+        PeerConnection.IceServer
+            .builder("turn:turn..com:5349?transport=tcp")
+            .setUsername("")
+            .setPassword(".COM")
+            .setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
             .createIceServer()
     )
 
@@ -54,14 +63,40 @@ class RTCClient(
     }
 
     private fun buildPeerConnection(observer: PeerConnection.Observer): PeerConnection? {
-        val rtcConfiguration = RTCConfiguration(iceServer)
+//        val rtcConfiguration = RTCConfiguration(iceServer)
 //        rtcConfiguration.iceTransportsType = PeerConnection.IceTransportsType.ALL
-//        rtcConfiguration.iceCandidatePoolSize = 2
-//        rtcConfiguration.bundlePolicy = PeerConnection.BundlePolicy.MAXCOMPAT
-        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+//        //rtcConfiguration.iceCandidatePoolSize = 2
+//        rtcConfiguration.bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
+//       // rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
 //        rtcConfiguration.continualGatheringPolicy =
 //            PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
 //        rtcConfiguration.candidateNetworkPolicy = PeerConnection.CandidateNetworkPolicy.ALL
+
+
+        val rtcConfiguration = RTCConfiguration(iceServer).apply {
+            //tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.ENABLED
+            iceTransportsType = PeerConnection.IceTransportsType.ALL
+            bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
+            //rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
+            continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+            //keyType = PeerConnection.KeyType.ECDSA
+            //enableDtlsSrtp = true
+            sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+        }
+
+
+        // TCP candidates are only useful when connecting to a server that supports
+        // ICE-TCP.
+//        rtcConfiguration.tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED;
+//        rtcConfiguration.bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE;
+//        rtcConfiguration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE;
+//        rtcConfiguration.continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY;
+        // Use ECDSA encryption.
+//        rtcConfiguration.keyType = PeerConnection.KeyType.ECDSA;
+        // Enable DTLS for normal calls and disable for loopback calls.
+//        rtcConfiguration.enableDtlsSrtp = !peerConnectionParameters.loopback;
+//        rtcConfiguration.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN;
+
       return  peerConnectionFactory.createPeerConnection(
             rtcConfiguration,
             observer
@@ -107,6 +142,16 @@ class RTCClient(
             MediaStreamTrack.MediaType.MEDIA_TYPE_VIDEO,
             RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
         )
+
+
+    }
+
+    fun getStats(){
+        peerConnection?.getStats { p0 ->
+            p0?.statsMap?.entries?.forEach {
+                Log.v("SignallingClient", "getStats  key ${it.key} value ${it.value}")
+            }
+        }
     }
 
     private fun PeerConnection.call(sdpObserver: SdpObserver) {

@@ -36,7 +36,7 @@ class PeerAdapter(
     override fun onBindViewHolder(holder: PeerViewHolder, position: Int) {
         getItem(position)?.let {
             holder.stopSurfaceView()
-            holder.bind(it, application)
+            holder.bind(it, application, context)
         }
     }
 

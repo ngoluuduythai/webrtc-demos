@@ -1,6 +1,8 @@
 package me.amryousef.webrtc_demo
 
+import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -17,6 +19,11 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
     private var sinkAdded = false
     private lateinit var signallingClient: SignallingClient
     private lateinit var rtcClient: RTCClient
+
+    private lateinit var application: Application
+    private lateinit var webrtcView: SurfaceViewRenderer
+    private lateinit var trackPeerMap: TrackPeerMap
+    private lateinit var context: Context
 
     init {
         itemView.findViewById<SurfaceViewRenderer>(R.id.remote_view).apply {
@@ -55,14 +62,21 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
 
     fun bind(
         trackPeerMap: TrackPeerMap,
-        application: Application
+        application: Application,
+        context: Context
     ) {
 
             val webrtcView = itemView.findViewById<SurfaceViewRenderer>(R.id.remote_view)
+            this.application = application
+            this.webrtcView = webrtcView
+            this.trackPeerMap = trackPeerMap
+            this.context = context
+
             this.signallingClient = SignallingClient(createSignallingClientListener())
 
 
-            createRTCClient(application, webrtcView, trackPeerMap)
+
+
 
         itemView.findViewById<TextView>(R.id.peerName).text = trackPeerMap.peerID.toString()
     }
@@ -74,14 +88,17 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         webrtcView: SurfaceViewRenderer,
         trackPeerMap: TrackPeerMap
     ) {
+        println("createRTCClient")
+
         rtcClient = RTCClient(
             application,
             object : PeerConnectionObserver() {
                 override fun onIceCandidate(p0: IceCandidate?) {
                     super.onIceCandidate(p0)
+
                     println("onIceCandidate  ${p0?.sdp}")
                     Log.v(
-                        this@PeerViewHolder.javaClass.simpleName,
+                        "SignallingClient",
                         "Send onIceCandidate ${p0?.sdp}"
                     )
 
@@ -98,8 +115,69 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
 
                 }
 
+                override fun onIceConnectionReceivingChange(p0: Boolean) {
+                    Log.v(
+                        "SignallingClient",
+                        "onIceConnectionReceivingChange"
+                    )
+                }
+
+                override fun onIceConnectionChange(p0: PeerConnection.IceConnectionState?) {
+                    Log.v(
+                        "SignallingClient",
+                        "onIceConnectionChange  ${p0?.name}"
+                    )
+                }
+
+                override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {
+                    Log.v(
+                        "SignallingClient",
+                        "onIceGatheringChange  ${p0?.name}"
+                    )
+                }
+
+                override fun onSignalingChange(p0: PeerConnection.SignalingState?) {
+                    Log.v(
+                        "SignallingClient",
+                        "onSignalingChange  ${p0?.name}"
+                    )
+                }
+
+                override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {
+                    Log.v(
+                        "SignallingClient",
+                        "onIceCandidatesRemoved  ${p0?.size}"
+                    )
+                }
+
+                override fun onRemoveStream(p0: MediaStream?) {
+                    Log.v(
+                        "SignallingClient",
+                        "onRemoveStream"
+                    )
+                    webrtcView.release()
+                }
+
+                override fun onRenegotiationNeeded() {
+                    Log.v(
+                        "SignallingClient",
+                        "onRenegotiationNeeded"
+                    )
+                }
+
+                override fun onAddTrack(p0: RtpReceiver?, p1: Array<out MediaStream>?) {
+                    Log.v(
+                        "SignallingClient",
+                        "onAddTrack"
+                    )
+                }
+
                 override fun onAddStream(p0: MediaStream?) {
                     super.onAddStream(p0)
+                    Log.v(
+                        "SignallingClient",
+                        "onAddStream"
+                    )
                     p0?.videoTracks?.get(0)?.addSink(webrtcView)
                 }
             }, trackPeerMap.rootEglBase
@@ -119,13 +197,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         rtcClient.initSurfaceView(webrtcView)
 
         rtcClient.addTransceiver()
-        val newPeerId = trackPeerMap.peerID + 10
-
-        signallingClient.send("HELLO " + newPeerId)
-
-
-        Thread.sleep(5000)
-        signallingClient.send("SESSION " +trackPeerMap.peerID)
+        rtcClient.getStats()
         rtcClient.call(sdpObserver)
 
     }
@@ -137,11 +209,11 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
             println("sdp onCreateSuccess ${p0?.description.toString()}")
 
             val sdpData = if (p0?.type == SessionDescription.Type.OFFER) {
-                Log.v(this@PeerViewHolder.javaClass.simpleName, "Send offer ${p0?.description}")
+                Log.v("SignallingClient", "Send offer ${p0?.description}")
 
                 SDPMessage(SDPData(type = "offer", sdp = p0.description!!))
             } else {
-                Log.v(this@PeerViewHolder.javaClass.simpleName, "Send anwser ${p0?.description}")
+                Log.v("SignallingClient", "Send anwser ${p0?.description}")
                 SDPMessage(SDPData(type = "answer", sdp = p0?.description!!))
             }
 
@@ -150,14 +222,31 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
     }
 
 
+    @UseExperimental(KtorExperimentalAPI::class)
     private fun createSignallingClientListener() = object : SignallingClientListener {
         override fun onConnectionEstablished() {
+            Log.v(
+                "SignallingClient",
+                "onConnectionEstablished"
+            )
             //call_button.isClickable = true
+            val newPeerId = trackPeerMap.peerID + 10
+            signallingClient.send("HELLO " + newPeerId)
+        }
+
+        override fun onSessionIsOK() {
+            (context as MainActivity).runOnUiThread(Runnable {
+                createRTCClient(application, webrtcView, trackPeerMap)
+            })
+        }
+
+        override fun onRegisteredWithServe() {
+            signallingClient.send("SESSION " +trackPeerMap.peerID)
         }
 
         override fun onOfferReceived(sdpData: SDPMessage) {
             Log.v(
-                this@PeerViewHolder.javaClass.simpleName,
+                "SignallingClient",
                 "Received onOfferReceived ${sdpData.sdp.sdp}"
             )
 
@@ -169,7 +258,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
 
         override fun onAnswerReceived(sdpData: SDPMessage) {
             Log.v(
-                this@PeerViewHolder.javaClass.simpleName,
+                "SignallingClient",
                 "Received onAnswerReceived ${sdpData.sdp.sdp}"
             )
 
@@ -180,7 +269,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
 
         override fun onIceCandidateReceived(iceMessage: IceMessage) {
             Log.v(
-                this@PeerViewHolder.javaClass.simpleName,
+                "SignallingClient",
                 "Received onIceCandidateReceived ${iceMessage.ice.candidate}"
             )
 

@@ -72,7 +72,17 @@ class SignallingClient(
 
                             Log.v(this@SignallingClient.javaClass.simpleName, "Received: $data")
                             if(data == "HELLO" || data == "OFFER_REQUEST" || data == "SESSION_OK" || data.contains("ERROR peer")) {
-                                Log.v(this@SignallingClient.javaClass.simpleName, "Registered with serve $data")
+                                when (data) {
+                                    "SESSION_OK" -> {
+                                        listener.onSessionIsOK()
+                                    }
+                                    "HELLO" -> {
+                                        listener.onRegisteredWithServe()
+                                    }
+                                    else -> {
+                                        Log.v(this@SignallingClient.javaClass.simpleName, "Registered with serve $data")
+                                    }
+                                }
                             } else {
                                 val jsonObject = gson.fromJson(data, JsonObject::class.java)
                                 Log.v(this@SignallingClient.javaClass.simpleName, "Received: jsonObject $jsonObject")
