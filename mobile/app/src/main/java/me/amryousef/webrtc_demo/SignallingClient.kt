@@ -152,6 +152,13 @@ data class IceData(
     val sdpMLineIndex: Int
  )
 
+data class RTCIceCandidateInit(
+    val candidate: String,
+    val sdp_mid: String,
+    val sdp_mline_index: Int,
+    val username_fragment: String
+)
+
 
 
 //{"sdp":{"type":"offer","sdp":"v=0\r\no=-"}}

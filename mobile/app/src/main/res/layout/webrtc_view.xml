@@ -14,6 +14,16 @@ android:layout_height="wrap_content">
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent" />
 
+    <org.webrtc.SurfaceViewRenderer
+        android:visibility="gone"
+        android:id="@+id/local_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@+id/remote_view"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
 <TextView
     android:id="@+id/peerName"
     android:layout_width="0dp"

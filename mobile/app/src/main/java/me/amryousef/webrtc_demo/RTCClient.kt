@@ -25,16 +25,16 @@ class RTCClient(
     }
 
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
+        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
         //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:3478").createIceServer(),
         //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:5349").createIceServer()
 
-        PeerConnection.IceServer
-            .builder("turn:turn..com:5349?transport=tcp")
-            .setUsername("")
-            .setPassword(".COM")
-            .setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
-            .createIceServer()
+//        PeerConnection.IceServer
+//            .builder("turn:turn.tel4vn.com:5349?transport=tcp")
+//            .setUsername("tel4vn")
+//            .setPassword("TEL4VN.COM")
+//            .setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
+//            .createIceServer()
     )
 
     private val peerConnectionFactory by lazy { buildPeerConnectionFactory() }
@@ -78,9 +78,10 @@ class RTCClient(
             iceTransportsType = PeerConnection.IceTransportsType.ALL
             bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
             //rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
-            continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+            //continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
             //keyType = PeerConnection.KeyType.ECDSA
             //enableDtlsSrtp = true
+
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
         }
 
@@ -131,6 +132,7 @@ class RTCClient(
         val localStream = peerConnectionFactory.createLocalMediaStream(LOCAL_STREAM_ID)
         localStream.addTrack(localVideoTrack)
         peerConnection?.addStream(localStream)
+
     }
 
     fun addTransceiver() {
@@ -228,5 +230,10 @@ class RTCClient(
 
     fun addIceCandidate(iceCandidate: IceCandidate?) {
         peerConnection?.addIceCandidate(iceCandidate)
+
+    }
+
+    fun getIceGatheringState(): PeerConnection.IceGatheringState? {
+        return  peerConnection?.iceGatheringState()
     }
 }
