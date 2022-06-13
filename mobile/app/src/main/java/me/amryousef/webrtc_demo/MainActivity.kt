@@ -20,14 +20,12 @@ import org.webrtc.*
 import java.io.*
 import org.webrtc.EglBase
 import androidx.recyclerview.widget.GridLayoutManager
-
-
-
+import io.nats.client.AuthHandler
 
 
 @ExperimentalCoroutinesApi
 @KtorExperimentalAPI
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NatClientListener {
 
     companion object {
         private const val CAMERA_PERMISSION_REQUEST_CODE = 1
@@ -35,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val rootEglBase: EglBase = EglBase.create()
+    private val natClient = NatClient(this)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         if (ContextCompat.checkSelfPermission(this, CAMERA_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
             requestCameraPermission()
         } else {
-            onCameraPermissionGranted()
+            //onCameraPermissionGranted()
         }
     }
 
@@ -63,9 +62,10 @@ class MainActivity : AppCompatActivity() {
             TrackPeerMap(7, rootEglBase)
         )
 
+
         val peerAdapter = PeerAdapter(courseList = peerList,
             context =  this@MainActivity as Context,
-            application = application
+            application = application, natClient = natClient
             )
 
         peerAdapter.submitList(peerList)
@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            onCameraPermissionGranted()
+            //onCameraPermissionGranted()
         } else {
             onCameraPermissionDenied()
         }
@@ -118,4 +118,28 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
     }
+
+    override fun onConnectionEstablished() {
+        println("xxxx onConnectionEstablished")
+        onCameraPermissionGranted()
+    }
+}
+
+open class NatsConnectionProperties {
+    lateinit var host: String
+    var pingInterval: Long = 0
+    //    var maxPingsOut: Int = 0
+    var maxReconnects: Int = 0
+    var reconnectWait: Long = 0
+    var connectionTimeout: Long = 0
+    lateinit var connectionName: String
+}
+
+class BasicAuthNatsConnectionProperties : NatsConnectionProperties() {
+    lateinit var username: String
+    lateinit var password: String
+}
+
+class StringAuthNatsConnectionProperties : NatsConnectionProperties() {
+    lateinit var stringAuthHandler: AuthHandler
 }

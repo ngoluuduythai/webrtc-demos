@@ -1,3 +1,5 @@
+@file:UseExperimental(ExperimentalStdlibApi::class)
+
 package me.amryousef.webrtc_demo
 
 import android.app.Activity
@@ -7,17 +9,21 @@ import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
 import io.ktor.util.*
+import io.nats.client.Connection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.webrtc.*
 import java.util.*
+import com.google.gson.JsonObject
+
 
 @UseExperimental(ExperimentalCoroutinesApi::class)
 class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
     RecyclerView.ViewHolder(view) {
     private val TAG = PeerViewHolder::class.java.simpleName
     private var sinkAdded = false
-    private lateinit var signallingClient: SignallingClient
+    private lateinit var signallingClient: Connection
     private lateinit var rtcClient: RTCClient
 
     private lateinit var application: Application
@@ -60,10 +66,12 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         }
     }
 
+    @UseExperimental(KtorExperimentalAPI::class)
     fun bind(
         trackPeerMap: TrackPeerMap,
         application: Application,
-        context: Context
+        context: Context,
+        natClient: NatClient
     ) {
 
             val webrtcView = itemView.findViewById<SurfaceViewRenderer>(R.id.remote_view)
@@ -72,13 +80,86 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
             this.trackPeerMap = trackPeerMap
             this.context = context
 
-            this.signallingClient = SignallingClient(createSignallingClientListener())
+            //this.signallingClient = SignallingClient(createSignallingClientListener())
 
 
+            itemView.findViewById<TextView>(R.id.peerName).text = trackPeerMap.peerID.toString()
+            createRTCClient(application, webrtcView, trackPeerMap)
+            this.signallingClient = natClient.natsConn!!
 
+        val gson = Gson()
 
+        val natsDispatcher = signallingClient.createDispatcher { message ->
+            println("xxxx message ${message.data.decodeToString()}")
 
-        itemView.findViewById<TextView>(R.id.peerName).text = trackPeerMap.peerID.toString()
+            val jsonObject = gson.fromJson(message.data.decodeToString(), JsonObject::class.java)
+            Log.v("SignallingClient", "Received: jsonObject $jsonObject")
+
+                if (jsonObject.has("ice")) {
+                    onIceCandidateReceived(gson.fromJson(jsonObject, IceMessage::class.java))
+                } else if (jsonObject.has("sdp")){
+                    val sdpData = gson.fromJson(jsonObject, SDPMessage::class.java)
+                    when(sdpData.sdp.type) {
+                        "offer" -> onOfferReceived(sdpData)
+                        "answer" -> onAnswerReceived(sdpData)
+                        else -> {
+                            Log.v("SignallingClient", "Unknown SDP Received: jsonObject $jsonObject")
+                        }
+                    }
+                } else {
+                    Log.v("SignallingClient", "Unknown Received: jsonObject $jsonObject")
+                }
+        }
+
+        val clientId = trackPeerMap.peerID + 10
+        natsDispatcher?.subscribe("device_${clientId}")
+
+        signallingClient.publish("cam_${trackPeerMap.peerID.toString()}", "Hello cam_${trackPeerMap.peerID.toString()}".toByteArray())
+    }
+
+     fun onOfferReceived(sdpData: SDPMessage) {
+        Log.v(
+            "SignallingClient",
+            "Received onOfferReceived ${sdpData.sdp.sdp}"
+        )
+
+        val description = SessionDescription(SessionDescription.Type.OFFER, sdpData.sdp.sdp)
+        rtcClient.onRemoteSessionReceived(description)
+        rtcClient.answer(sdpObserver)
+        //remote_view_loading.isGone = true
+    }
+
+     fun onAnswerReceived(sdpData: SDPMessage) {
+        Log.v(
+            "SignallingClient",
+            "Received onAnswerReceived ${sdpData.sdp.sdp}"
+        )
+
+        val description = SessionDescription(SessionDescription.Type.ANSWER, sdpData.sdp.sdp)
+        rtcClient.onRemoteSessionReceived(description)
+        //remote_view_loading.isGone = true
+    }
+
+     fun onIceCandidateReceived(iceMessage: IceMessage) {
+        Log.v(
+            "SignallingClient",
+            "Received onIceCandidateReceived ${iceMessage.ice.candidate}"
+        )
+
+        var sdpMid = iceMessage.ice.sdpMid
+
+        println("sdpMid  $sdpMid")
+        if (sdpMid == "null" || sdpMid == "" || sdpMid == null) {
+            sdpMid = "0"
+        }
+
+        val iceCandidate =
+            IceCandidate(
+                sdpMid,
+                iceMessage.ice.sdpMLineIndex,
+                iceMessage.ice.candidate
+            )
+        rtcClient.addIceCandidate(iceCandidate)
     }
 
 
@@ -110,7 +191,10 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
                         )
                     )
 
-                    signallingClient.send(iceData)
+                    //signallingClient.send(iceData)
+                    val data = Gson().toJson(iceData)
+                    signallingClient.publish("cam_${trackPeerMap.peerID.toString()}", data.toByteArray())
+
                     rtcClient.addIceCandidate(p0)
 
                 }
@@ -217,7 +301,8 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
                 SDPMessage(SDPData(type = "answer", sdp = p0?.description!!))
             }
 
-            signallingClient.send(sdpData)
+            val data = Gson().toJson(sdpData)
+            signallingClient.publish("cam_${trackPeerMap.peerID.toString()}", data.toByteArray())
         }
     }
 
@@ -231,7 +316,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
             )
             //call_button.isClickable = true
             val newPeerId = trackPeerMap.peerID + 10
-            signallingClient.send("HELLO " + newPeerId)
+            //signallingClient.send("HELLO " + newPeerId)
         }
 
         override fun onSessionIsOK() {
@@ -241,53 +326,22 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         }
 
         override fun onRegisteredWithServe() {
-            signallingClient.send("SESSION " +trackPeerMap.peerID)
+           // signallingClient.send("SESSION " +trackPeerMap.peerID)
         }
 
-        override fun onOfferReceived(sdpData: SDPMessage) {
-            Log.v(
-                "SignallingClient",
-                "Received onOfferReceived ${sdpData.sdp.sdp}"
-            )
-
-            val description = SessionDescription(SessionDescription.Type.OFFER, sdpData.sdp.sdp)
-            rtcClient.onRemoteSessionReceived(description)
-            rtcClient.answer(sdpObserver)
-            //remote_view_loading.isGone = true
+        override fun onOfferReceived(description: SDPMessage) {
+            TODO("Not yet implemented")
         }
 
-        override fun onAnswerReceived(sdpData: SDPMessage) {
-            Log.v(
-                "SignallingClient",
-                "Received onAnswerReceived ${sdpData.sdp.sdp}"
-            )
-
-            val description = SessionDescription(SessionDescription.Type.ANSWER, sdpData.sdp.sdp)
-            rtcClient.onRemoteSessionReceived(description)
-            //remote_view_loading.isGone = true
+        override fun onAnswerReceived(description: SDPMessage) {
+            TODO("Not yet implemented")
         }
 
-        override fun onIceCandidateReceived(iceMessage: IceMessage) {
-            Log.v(
-                "SignallingClient",
-                "Received onIceCandidateReceived ${iceMessage.ice.candidate}"
-            )
-
-            var sdpMid = iceMessage.ice.sdpMid
-
-            println("sdpMid  $sdpMid")
-            if (sdpMid == "null" || sdpMid == "" || sdpMid == null) {
-                sdpMid = "0"
-            }
-
-            val iceCandidate =
-                IceCandidate(
-                    sdpMid,
-                    iceMessage.ice.sdpMLineIndex,
-                    iceMessage.ice.candidate
-                )
-            rtcClient.addIceCandidate(iceCandidate)
+        override fun onIceCandidateReceived(iceCandidate: IceMessage) {
+            TODO("Not yet implemented")
         }
+
+
     }
 
 }

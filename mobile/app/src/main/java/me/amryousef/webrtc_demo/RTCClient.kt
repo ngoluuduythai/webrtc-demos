@@ -25,16 +25,16 @@ class RTCClient(
     }
 
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
+        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
         //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:3478").createIceServer(),
         //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:5349").createIceServer()
 
-        PeerConnection.IceServer
-            .builder("turn:turn..com:5349?transport=tcp")
-            .setUsername("")
-            .setPassword(".COM")
-            .setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
-            .createIceServer()
+//        PeerConnection.IceServer
+//            .builder("turn:turn..com:5349?transport=tcp")
+//            .setUsername("")
+//            .setPassword(".COM")
+//            .setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
+//            .createIceServer()
     )
 
     private val peerConnectionFactory by lazy { buildPeerConnectionFactory() }

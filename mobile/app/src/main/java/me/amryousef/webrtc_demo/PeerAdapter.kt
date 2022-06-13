@@ -10,7 +10,8 @@ import androidx.recyclerview.widget.ListAdapter
 class PeerAdapter(
     private val courseList: List<TrackPeerMap>,
     private val context: Context,
-    private val application: Application
+    private val application: Application,
+    private val natClient: NatClient
 ) : ListAdapter<TrackPeerMap, PeerViewHolder>(DIFFUTIL_CALLBACK) {
 
     companion object {
@@ -36,7 +37,7 @@ class PeerAdapter(
     override fun onBindViewHolder(holder: PeerViewHolder, position: Int) {
         getItem(position)?.let {
             holder.stopSurfaceView()
-            holder.bind(it, application, context)
+            holder.bind(it, application, context, natClient)
         }
     }
 
