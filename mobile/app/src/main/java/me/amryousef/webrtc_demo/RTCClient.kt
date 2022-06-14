@@ -53,7 +53,7 @@ class RTCClient(
     private fun buildPeerConnectionFactory(): PeerConnectionFactory {
         return PeerConnectionFactory
             .builder()
-            .setVideoDecoderFactory(DefaultVideoDecoderFactory(rootEglBase.eglBaseContext))
+            .setVideoDecoderFactory(CustomVideoDecoderFactory(rootEglBase.eglBaseContext))
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(rootEglBase.eglBaseContext, false, true))
             .setOptions(PeerConnectionFactory.Options().apply {
                 //disableEncryption = true

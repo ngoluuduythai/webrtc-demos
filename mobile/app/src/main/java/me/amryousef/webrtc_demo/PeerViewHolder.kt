@@ -12,10 +12,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import io.ktor.util.*
 import io.nats.client.Connection
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.webrtc.*
 import java.util.*
 import com.google.gson.JsonObject
+import kotlinx.coroutines.*
+import java.lang.Runnable
+import kotlinx.coroutines.delay
 
 
 @UseExperimental(ExperimentalCoroutinesApi::class)
@@ -90,7 +92,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         val gson = Gson()
 
         val natsDispatcher = signallingClient.createDispatcher { message ->
-            println("xxxx message ${message.data.decodeToString()}")
+            println("SignallingClient xxxx message ${message.data.decodeToString()}")
 
             val jsonObject = gson.fromJson(message.data.decodeToString(), JsonObject::class.java)
             Log.v("SignallingClient", "Received: jsonObject $jsonObject")
@@ -112,12 +114,15 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         }
 
         val clientId = trackPeerMap.peerID + 10
-        natsDispatcher?.subscribe("device_${clientId}")
+        val topic = "device_${clientId}"
+        Log.v("SignallingClient", "subscribe topic $topic")
+
+        natsDispatcher?.subscribe(topic)
 
         signallingClient.publish("cam_${trackPeerMap.peerID.toString()}", "Hello cam_${trackPeerMap.peerID.toString()}".toByteArray())
     }
 
-     fun onOfferReceived(sdpData: SDPMessage) {
+     private fun onOfferReceived(sdpData: SDPMessage) {
         Log.v(
             "SignallingClient",
             "Received onOfferReceived ${sdpData.sdp.sdp}"
@@ -129,7 +134,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         //remote_view_loading.isGone = true
     }
 
-     fun onAnswerReceived(sdpData: SDPMessage) {
+     private fun onAnswerReceived(sdpData: SDPMessage) {
         Log.v(
             "SignallingClient",
             "Received onAnswerReceived ${sdpData.sdp.sdp}"
@@ -140,7 +145,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
         //remote_view_loading.isGone = true
     }
 
-     fun onIceCandidateReceived(iceMessage: IceMessage) {
+     private fun onIceCandidateReceived(iceMessage: IceMessage) {
         Log.v(
             "SignallingClient",
             "Received onIceCandidateReceived ${iceMessage.ice.candidate}"
@@ -148,7 +153,7 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
 
         var sdpMid = iceMessage.ice.sdpMid
 
-        println("sdpMid  $sdpMid")
+        println("SignallingClient sdpMid  $sdpMid")
         if (sdpMid == "null" || sdpMid == "" || sdpMid == null) {
             sdpMid = "0"
         }
@@ -192,10 +197,15 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
                     )
 
                     //signallingClient.send(iceData)
-                    val data = Gson().toJson(iceData)
-                    signallingClient.publish("cam_${trackPeerMap.peerID.toString()}", data.toByteArray())
-
                     rtcClient.addIceCandidate(p0)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val data = Gson().toJson(iceData)
+                        delay(500)
+                        signallingClient.publish("cam_${trackPeerMap.peerID.toString()}", data.toByteArray())
+                    }
+
+
 
                 }
 

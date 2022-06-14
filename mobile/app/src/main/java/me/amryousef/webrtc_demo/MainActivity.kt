@@ -3,10 +3,12 @@ package me.amryousef.webrtc_demo
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.GridView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -33,6 +35,7 @@ class MainActivity : AppCompatActivity(), NatClientListener {
     }
 
     private val rootEglBase: EglBase = EglBase.create()
+    @RequiresApi(Build.VERSION_CODES.O)
     private val natClient = NatClient(this)
 
 
@@ -52,15 +55,17 @@ class MainActivity : AppCompatActivity(), NatClientListener {
 
     lateinit var courseList: List<TrackPeerMap>
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun onCameraPermissionGranted() {
 
-        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase),
-            TrackPeerMap(2, rootEglBase),
-            TrackPeerMap(4, rootEglBase),
-            TrackPeerMap(5, rootEglBase),
-            TrackPeerMap(6, rootEglBase),
-            TrackPeerMap(7, rootEglBase)
-        )
+
+
+        val peerList = mutableListOf<TrackPeerMap>()
+
+        for (i in 1..20){
+            println("xxxx thai $i")
+            peerList.add(TrackPeerMap(peerID = i, rootEglBase = rootEglBase))
+        }
 
 
         val peerAdapter = PeerAdapter(courseList = peerList,
@@ -73,7 +78,7 @@ class MainActivity : AppCompatActivity(), NatClientListener {
         val view: RecyclerView = findViewById(R.id.recyclerView)
 
         view.apply {
-            layoutManager = GridLayoutManager(this@MainActivity, 2)
+            layoutManager = GridLayoutManager(this@MainActivity, 4)
             adapter = peerAdapter
         }
     }
@@ -119,6 +124,7 @@ class MainActivity : AppCompatActivity(), NatClientListener {
         super.onDestroy()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onConnectionEstablished() {
         println("xxxx onConnectionEstablished")
         onCameraPermissionGranted()

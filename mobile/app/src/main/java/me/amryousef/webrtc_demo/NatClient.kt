@@ -2,12 +2,16 @@
 
 package me.amryousef.webrtc_demo
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import io.ktor.util.*
 import io.nats.client.*
 import kotlinx.coroutines.*
+import java.time.Duration
 import javax.net.ssl.SSLContext
 
+@RequiresApi(Build.VERSION_CODES.O)
 @ExperimentalCoroutinesApi
 @KtorExperimentalAPI
 class NatClient(private val natClientListener: NatClientListener) : CoroutineScope {
@@ -21,6 +25,7 @@ class NatClient(private val natClientListener: NatClientListener) : CoroutineSco
         connect()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun connect() = launch {
         println("Nats.connect")
 
@@ -42,6 +47,7 @@ class NatClient(private val natClientListener: NatClientListener) : CoroutineSco
             .server(natsConnectionProperties.host)
             .maxReconnects(natsConnectionProperties.maxReconnects)
             .connectionName(natsConnectionProperties.connectionName)
+            .connectionTimeout(Duration.ofSeconds(6))
             .sslContext(sslContext)
             .traceConnection()
 

@@ -15,6 +15,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
         <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|uiMode"
             android:exported="true"
             android:name=".MainActivity">
             <intent-filter>
