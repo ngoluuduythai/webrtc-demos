@@ -208,13 +208,19 @@ class PeerViewHolder(view: View, private val getItem: (Int) -> TrackPeerMap) :
             super.onCreateSuccess(p0)
             println("sdp onCreateSuccess ${p0?.description.toString()}")
 
-            val sdpData = if (p0?.type == SessionDescription.Type.OFFER) {
-                Log.v("SignallingClient", "Send offer ${p0?.description}")
 
-                SDPMessage(SDPData(type = "offer", sdp = p0.description!!))
+            val sdpLines = p0?.description?.split("\r\n")  as MutableList<String>
+
+            sdpLines.removeIf { it == "a=fmtp:100 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"}
+            val dataSdp = sdpLines.joinToString("\r\n")
+
+            val sdpData = if (p0?.type == SessionDescription.Type.OFFER) {
+                Log.v("SignallingClient", "Send offer ${dataSdp}")
+
+                SDPMessage(SDPData(type = "offer", sdp = dataSdp))
             } else {
-                Log.v("SignallingClient", "Send anwser ${p0?.description}")
-                SDPMessage(SDPData(type = "answer", sdp = p0?.description!!))
+                Log.v("SignallingClient", "Send anwser ${dataSdp}")
+                SDPMessage(SDPData(type = "answer", sdp = dataSdp))
             }
 
             signallingClient.send(sdpData)

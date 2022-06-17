@@ -55,12 +55,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun onCameraPermissionGranted() {
 
-        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase),
-            TrackPeerMap(2, rootEglBase),
-            TrackPeerMap(4, rootEglBase),
-            TrackPeerMap(5, rootEglBase),
-            TrackPeerMap(6, rootEglBase),
-            TrackPeerMap(7, rootEglBase)
+        val peerList = mutableListOf(TrackPeerMap(1, rootEglBase)
+//            TrackPeerMap(2, rootEglBase),
+//            TrackPeerMap(4, rootEglBase),
+//            TrackPeerMap(5, rootEglBase),
+//            TrackPeerMap(6, rootEglBase),
+//            TrackPeerMap(7, rootEglBase)
         )
 
         val peerAdapter = PeerAdapter(courseList = peerList,

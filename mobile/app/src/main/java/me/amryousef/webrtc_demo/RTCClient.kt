@@ -2,6 +2,7 @@ package me.amryousef.webrtc_demo
 
 import android.app.Application
 import android.content.Context
+import android.os.Trace
 import android.util.Log
 import org.webrtc.*
 import org.webrtc.PeerConnection.RTCConfiguration
@@ -30,9 +31,9 @@ class RTCClient(
         //PeerConnection.IceServer.builder("turn:stun.tel4vn.com:5349").createIceServer()
 
         PeerConnection.IceServer
-            .builder("turn:turn..com:5349?transport=tcp")
-            .setUsername("")
-            .setPassword(".COM")
+            .builder("turn:turn.tel4vn.com:5349?transport=tcp")
+            .setUsername("tel4vn")
+            .setPassword("TEL4VN.COM")
             .setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
             .createIceServer()
     )
@@ -138,6 +139,8 @@ class RTCClient(
 //            MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,
 //            RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
 //        )
+
+
         peerConnection?.addTransceiver(
             MediaStreamTrack.MediaType.MEDIA_TYPE_VIDEO,
             RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY)
