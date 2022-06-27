@@ -2,7 +2,6 @@ package me.amryousef.webrtc_demo
 
 import android.app.Application
 import android.content.Context
-import android.os.Trace
 import android.util.Log
 import org.webrtc.*
 import org.webrtc.PeerConnection.RTCConfiguration
@@ -42,6 +41,7 @@ class RTCClient(
     private val videoCapturer by lazy { getVideoCapturer(context) }
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val peerConnection by lazy { buildPeerConnection(observer) }
+    private var dataChannel: DataChannel? = null
 
     private fun initPeerConnectionFactory(context: Application) {
         val options = PeerConnectionFactory.InitializationOptions.builder(context)
@@ -147,6 +147,8 @@ class RTCClient(
         )
 
 
+
+
     }
 
     fun getStats(){
@@ -156,6 +158,9 @@ class RTCClient(
             }
         }
     }
+
+
+
 
     private fun PeerConnection.call(sdpObserver: SdpObserver) {
         val constraints = MediaConstraints().apply {
@@ -209,9 +214,28 @@ class RTCClient(
         }, constraints)
     }
 
+    private fun PeerConnection.intDataChannel(channelName: String ,dataChanelObserver:  DataChannel.Observer) {
+
+        val dcInit = DataChannel.Init()
+        dataChannel = peerConnection?.createDataChannel(channelName, dcInit)
+        dataChannel?.registerObserver(object :  DataChannel.Observer by dataChanelObserver {
+            override fun onBufferedAmountChange(p0: Long) {
+            }
+
+            override fun onStateChange() {
+            }
+
+            override fun onMessage(p0: DataChannel.Buffer?) {
+            }
+        })
+    }
+
     fun call(sdpObserver: SdpObserver) = peerConnection?.call(sdpObserver)
 
     fun answer(sdpObserver: SdpObserver) = peerConnection?.answer(sdpObserver)
+
+    fun intDataChannel(channelName: String, dataChannelObserver: DataChannel.Observer) =
+        peerConnection?.intDataChannel(channelName,dataChannelObserver)
 
     fun onRemoteSessionReceived(sessionDescription: SessionDescription) {
         peerConnection?.setRemoteDescription(object : SdpObserver {
